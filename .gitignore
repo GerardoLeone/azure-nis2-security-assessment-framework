@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+
+.env
+outputs/*
+!outputs/.gitkeep
+
+.idea/
+.DS_Store
+*.log
