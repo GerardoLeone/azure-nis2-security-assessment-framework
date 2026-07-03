@@ -34,8 +34,11 @@ class ConfigurationAnalyzer:
                     "rule_id": rule["id"],
                     "title": rule["title"],
                     "severity": rule["severity"],
+                    "message": rule.get("message", rule["title"]),
                     "description": rule["description"],
+                    "rationale": rule.get("rationale", ""),
                     "remediation": rule["remediation"],
+                    "references": rule.get("references", []),
                     "resource": {
                         "id": resource["id"],
                         "name": resource["name"],

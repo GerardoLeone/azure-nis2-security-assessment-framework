@@ -197,9 +197,12 @@ class ReportingEngine:
                 ["Rule ID", finding.get("rule_id", "N/A")],
                 ["Resource", resource.get("name", "N/A")],
                 ["Resource type", resource.get("type", "N/A")],
+                ["Message", finding.get("message", "")],
                 ["Description", finding.get("description", "")],
+                ["Rationale", finding.get("rationale", "")],
                 ["Remediation", finding.get("remediation", "")],
                 ["NIS2 controls", ", ".join(finding.get("nis2_controls", []))],
+                ["References", self._format_references(finding.get("references", []))],
                 ["Evidence", self._format_evidence(evidence)],
             ]
 
@@ -484,12 +487,51 @@ class ReportingEngine:
         if not evidence:
             return "-"
 
+        if "matched_rules" in evidence:
+            matched_rules = evidence.get("matched_rules", [])
+            target_ports = ", ".join(evidence.get("target_ports", []))
+
+            if not matched_rules:
+                return f"No matching rule found for target ports: {target_ports}"
+
+            parts = []
+
+            for rule in matched_rules:
+                rule_name = rule.get("name", "unknown")
+                priority = rule.get("priority", "unknown")
+                source = ", ".join(rule.get("source", []))
+                ports = ", ".join(rule.get("matched_ports", []))
+
+                parts.append(
+                    f"NSG rule '{rule_name}' with priority {priority} allows port(s) {ports} from source {source}."
+                )
+
+            return " ".join(parts)
+
+        if "public_containers" in evidence:
+            containers = evidence.get("public_containers", [])
+
+            if not containers:
+                return "No public containers detected."
+
+            return "; ".join(
+                f"Container '{container.get('name')}' has public access level '{container.get('public_access')}'"
+                for container in containers
+            )
+
         parts = []
 
         for key, value in evidence.items():
             parts.append(f"{key}: {value}")
 
         return "; ".join(parts)
+
+    @staticmethod
+    def _format_references(references: list[str]) -> str:
+        if not references:
+            return "-"
+
+        return "\n".join(references)
 
     @staticmethod
     def _format_affected_resources(resources: list[dict]) -> str:

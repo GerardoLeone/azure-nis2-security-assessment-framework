@@ -4,53 +4,93 @@ rules:
     resource_type: Microsoft.Storage/storageAccounts
     check: storage_allow_blob_public_access_enabled
     severity: High
+    message: Blob anonymous public access is enabled at storage account level.
     description: Storage account allows anonymous public access for blob data.
+    rationale: >
+      Anonymous blob access can expose data publicly if containers or blobs are misconfigured.
+      Disabling this setting reduces the risk of accidental data exposure and supports a secure-by-default storage posture.
     remediation: Disable blob anonymous public access on the storage account.
+    references:
+      - "https://learn.microsoft.com/azure/storage/blobs/anonymous-read-access-prevent"
+      - "https://learn.microsoft.com/azure/storage/blobs/anonymous-read-access-configure"
     nis2_controls:
-      - NIS2-ART21-2-D
+      - NIS2-ART21-2-A
       - NIS2-ART21-2-E
+      - NIS2-ART21-2-I
 
   - id: AZ-STORAGE-002
     title: Storage account does not enforce HTTPS-only traffic
     resource_type: Microsoft.Storage/storageAccounts
     check: storage_https_only_disabled
     severity: High
+    message: Secure transfer / HTTPS-only traffic is not enforced.
     description: Storage account allows non-HTTPS traffic.
+    rationale: >
+      Allowing non-HTTPS traffic may expose data in transit to interception or tampering.
+      Enforcing secure transfer ensures that storage requests use encrypted channels.
     remediation: Enable secure transfer required / HTTPS-only traffic.
+    references:
+      - "https://learn.microsoft.com/azure/storage/common/storage-require-secure-transfer"
+      - "https://learn.microsoft.com/azure/storage/blobs/security-recommendations"
     nis2_controls:
-      - NIS2-ART21-2-D
+      - NIS2-ART21-2-A
       - NIS2-ART21-2-E
+      - NIS2-ART21-2-H
 
   - id: AZ-STORAGE-003
     title: Storage account is reachable from public networks
     resource_type: Microsoft.Storage/storageAccounts
     check: storage_public_network_access_enabled
     severity: Medium
+    message: Public network access is enabled for the storage account.
     description: Storage account public network access is enabled.
+    rationale: >
+      Public network exposure increases the attack surface of the storage account.
+      Restricting access to selected networks or private endpoints reduces exposure.
     remediation: Restrict public network access and use private endpoints or selected networks.
+    references:
+      - "https://learn.microsoft.com/azure/storage/common/storage-network-security"
     nis2_controls:
-      - NIS2-ART21-2-D
+      - NIS2-ART21-2-A
+      - NIS2-ART21-2-E
+      - NIS2-ART21-2-I
 
   - id: AZ-STORAGE-004
     title: Blob container allows anonymous access
     resource_type: Microsoft.Storage/storageAccounts
     check: storage_container_public_access_enabled
     severity: High
+    message: One or more blob containers allow anonymous access.
     description: One or more blob containers allow anonymous access.
+    rationale: >
+      Public blob containers may expose data directly on the Internet.
+      Container-level anonymous access should be avoided unless explicitly required and justified.
     remediation: Set container anonymous access level to private.
+    references:
+      - "https://learn.microsoft.com/azure/storage/blobs/anonymous-read-access-prevent"
+      - "https://learn.microsoft.com/azure/storage/blobs/anonymous-read-access-configure"
     nis2_controls:
-      - NIS2-ART21-2-D
+      - NIS2-ART21-2-A
       - NIS2-ART21-2-E
+      - NIS2-ART21-2-I
 
   - id: AZ-KV-001
     title: Key Vault public network access is enabled
     resource_type: Microsoft.KeyVault/vaults
     check: keyvault_public_network_access_enabled
     severity: High
+    message: Key Vault public network access is enabled.
     description: Key Vault is reachable from public networks.
+    rationale: >
+      Key Vault stores sensitive material such as secrets, keys and certificates.
+      Public network exposure increases the attack surface and should be reduced through private endpoints or selected networks.
     remediation: Disable public network access or restrict access to selected networks/private endpoints.
+    references:
+      - "https://learn.microsoft.com/azure/key-vault/general/network-security"
+      - "https://learn.microsoft.com/azure/key-vault/general/security-features"
     nis2_controls:
-      - NIS2-ART21-2-D
+      - NIS2-ART21-2-A
+      - NIS2-ART21-2-E
       - NIS2-ART21-2-I
 
   - id: AZ-KV-002
@@ -58,10 +98,17 @@ rules:
     resource_type: Microsoft.KeyVault/vaults
     check: keyvault_default_action_allow
     severity: High
+    message: Key Vault firewall default action allows traffic.
     description: Key Vault network ACL default action allows traffic.
+    rationale: >
+      A permissive default network action may allow broader access than intended.
+      Deny-by-default network rules are preferable for sensitive services.
     remediation: Set Key Vault network ACL default action to Deny.
+    references:
+      - "https://learn.microsoft.com/azure/key-vault/general/network-security"
     nis2_controls:
-      - NIS2-ART21-2-D
+      - NIS2-ART21-2-A
+      - NIS2-ART21-2-E
       - NIS2-ART21-2-I
 
   - id: AZ-NSG-001
@@ -69,52 +116,85 @@ rules:
     resource_type: Microsoft.Network/networkSecurityGroups
     check: nsg_inbound_port_open_to_internet
     severity: Critical
+    message: NSG allows inbound SSH traffic from the Internet.
     params:
       ports:
         - 22
     description: Network Security Group allows inbound SSH traffic from the Internet.
-    remediation: Remove public SSH exposure or restrict source IP ranges.
+    rationale: >
+      SSH is an administrative remote access protocol.
+      Exposing SSH directly to the Internet increases the risk of brute-force attacks, unauthorized access and lateral movement.
+    remediation: Remove public SSH exposure or restrict source IP ranges. Prefer VPN, Bastion or just-in-time access.
+    references:
+      - "https://learn.microsoft.com/azure/virtual-network/network-security-groups-overview"
+      - "https://learn.microsoft.com/azure/security/fundamentals/network-best-practices"
     nis2_controls:
-      - NIS2-ART21-2-D
+      - NIS2-ART21-2-A
+      - NIS2-ART21-2-E
       - NIS2-ART21-2-I
+      - NIS2-ART21-2-J
 
   - id: AZ-NSG-002
     title: RDP exposed to the Internet
     resource_type: Microsoft.Network/networkSecurityGroups
     check: nsg_inbound_port_open_to_internet
     severity: Critical
+    message: NSG allows inbound RDP traffic from the Internet.
     params:
       ports:
         - 3389
     description: Network Security Group allows inbound RDP traffic from the Internet.
-    remediation: Remove public RDP exposure or restrict source IP ranges.
+    rationale: >
+      RDP is an administrative remote access protocol.
+      Exposing RDP directly to the Internet increases the risk of brute-force attacks, credential compromise and unauthorized access.
+    remediation: Remove public RDP exposure or restrict source IP ranges. Prefer VPN, Bastion or just-in-time access.
+    references:
+      - "https://learn.microsoft.com/azure/virtual-network/network-security-groups-overview"
+      - "https://learn.microsoft.com/azure/security/fundamentals/network-best-practices"
     nis2_controls:
-      - NIS2-ART21-2-D
+      - NIS2-ART21-2-A
+      - NIS2-ART21-2-E
       - NIS2-ART21-2-I
+      - NIS2-ART21-2-J
 
   - id: AZ-NSG-003
     title: HTTP exposed to the Internet
     resource_type: Microsoft.Network/networkSecurityGroups
     check: nsg_inbound_port_open_to_internet
     severity: Medium
+    message: NSG allows inbound HTTP traffic from the Internet.
     params:
       ports:
         - 80
     description: Network Security Group allows inbound HTTP traffic from the Internet.
+    rationale: >
+      HTTP traffic is not encrypted. Public HTTP exposure should be evaluated and replaced with HTTPS where possible.
     remediation: Prefer HTTPS and restrict public exposure where possible.
+    references:
+      - "https://learn.microsoft.com/azure/virtual-network/network-security-groups-overview"
     nis2_controls:
-      - NIS2-ART21-2-D
+      - NIS2-ART21-2-A
+      - NIS2-ART21-2-E
+      - NIS2-ART21-2-H
 
   - id: AZ-NSG-004
     title: SQL Server port exposed to the Internet
     resource_type: Microsoft.Network/networkSecurityGroups
     check: nsg_inbound_port_open_to_internet
     severity: Critical
+    message: NSG allows inbound SQL Server traffic from the Internet.
     params:
       ports:
         - 1433
     description: Network Security Group allows inbound SQL Server traffic from the Internet.
+    rationale: >
+      SQL Server should not be reachable from arbitrary Internet sources.
+      Public database exposure increases the risk of unauthorized access, brute-force attempts and data compromise.
     remediation: Remove public SQL exposure and restrict access to trusted private networks.
+    references:
+      - "https://learn.microsoft.com/azure/azure-sql/database/firewall-configure"
+      - "https://learn.microsoft.com/azure/virtual-network/network-security-groups-overview"
     nis2_controls:
-      - NIS2-ART21-2-D
+      - NIS2-ART21-2-A
+      - NIS2-ART21-2-E
       - NIS2-ART21-2-I
