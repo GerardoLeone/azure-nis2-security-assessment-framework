@@ -39,12 +39,16 @@ def main() -> None:
     table.add_column("Name")
     table.add_column("Type")
     table.add_column("Location")
+    table.add_column("Config")
+    table.add_column("Errors")
 
     for resource in inventory:
         table.add_row(
             resource["name"],
             resource["type"],
-            resource["location"] or "-"
+            resource["location"] or "-",
+            "yes" if resource.get("configuration") else "no",
+            str(len(resource.get("collection_errors", [])))
         )
 
     console.print(table)
