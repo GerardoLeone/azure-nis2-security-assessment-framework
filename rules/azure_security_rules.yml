@@ -1,0 +1,120 @@
+rules:
+  - id: AZ-STORAGE-001
+    title: Storage account allows blob public access
+    resource_type: Microsoft.Storage/storageAccounts
+    check: storage_allow_blob_public_access_enabled
+    severity: High
+    description: Storage account allows anonymous public access for blob data.
+    remediation: Disable blob anonymous public access on the storage account.
+    nis2_controls:
+      - NIS2-ART21-2-D
+      - NIS2-ART21-2-E
+
+  - id: AZ-STORAGE-002
+    title: Storage account does not enforce HTTPS-only traffic
+    resource_type: Microsoft.Storage/storageAccounts
+    check: storage_https_only_disabled
+    severity: High
+    description: Storage account allows non-HTTPS traffic.
+    remediation: Enable secure transfer required / HTTPS-only traffic.
+    nis2_controls:
+      - NIS2-ART21-2-D
+      - NIS2-ART21-2-E
+
+  - id: AZ-STORAGE-003
+    title: Storage account is reachable from public networks
+    resource_type: Microsoft.Storage/storageAccounts
+    check: storage_public_network_access_enabled
+    severity: Medium
+    description: Storage account public network access is enabled.
+    remediation: Restrict public network access and use private endpoints or selected networks.
+    nis2_controls:
+      - NIS2-ART21-2-D
+
+  - id: AZ-STORAGE-004
+    title: Blob container allows anonymous access
+    resource_type: Microsoft.Storage/storageAccounts
+    check: storage_container_public_access_enabled
+    severity: High
+    description: One or more blob containers allow anonymous access.
+    remediation: Set container anonymous access level to private.
+    nis2_controls:
+      - NIS2-ART21-2-D
+      - NIS2-ART21-2-E
+
+  - id: AZ-KV-001
+    title: Key Vault public network access is enabled
+    resource_type: Microsoft.KeyVault/vaults
+    check: keyvault_public_network_access_enabled
+    severity: High
+    description: Key Vault is reachable from public networks.
+    remediation: Disable public network access or restrict access to selected networks/private endpoints.
+    nis2_controls:
+      - NIS2-ART21-2-D
+      - NIS2-ART21-2-I
+
+  - id: AZ-KV-002
+    title: Key Vault firewall default action allows traffic
+    resource_type: Microsoft.KeyVault/vaults
+    check: keyvault_default_action_allow
+    severity: High
+    description: Key Vault network ACL default action allows traffic.
+    remediation: Set Key Vault network ACL default action to Deny.
+    nis2_controls:
+      - NIS2-ART21-2-D
+      - NIS2-ART21-2-I
+
+  - id: AZ-NSG-001
+    title: SSH exposed to the Internet
+    resource_type: Microsoft.Network/networkSecurityGroups
+    check: nsg_inbound_port_open_to_internet
+    severity: Critical
+    params:
+      ports:
+        - 22
+    description: Network Security Group allows inbound SSH traffic from the Internet.
+    remediation: Remove public SSH exposure or restrict source IP ranges.
+    nis2_controls:
+      - NIS2-ART21-2-D
+      - NIS2-ART21-2-I
+
+  - id: AZ-NSG-002
+    title: RDP exposed to the Internet
+    resource_type: Microsoft.Network/networkSecurityGroups
+    check: nsg_inbound_port_open_to_internet
+    severity: Critical
+    params:
+      ports:
+        - 3389
+    description: Network Security Group allows inbound RDP traffic from the Internet.
+    remediation: Remove public RDP exposure or restrict source IP ranges.
+    nis2_controls:
+      - NIS2-ART21-2-D
+      - NIS2-ART21-2-I
+
+  - id: AZ-NSG-003
+    title: HTTP exposed to the Internet
+    resource_type: Microsoft.Network/networkSecurityGroups
+    check: nsg_inbound_port_open_to_internet
+    severity: Medium
+    params:
+      ports:
+        - 80
+    description: Network Security Group allows inbound HTTP traffic from the Internet.
+    remediation: Prefer HTTPS and restrict public exposure where possible.
+    nis2_controls:
+      - NIS2-ART21-2-D
+
+  - id: AZ-NSG-004
+    title: SQL Server port exposed to the Internet
+    resource_type: Microsoft.Network/networkSecurityGroups
+    check: nsg_inbound_port_open_to_internet
+    severity: Critical
+    params:
+      ports:
+        - 1433
+    description: Network Security Group allows inbound SQL Server traffic from the Internet.
+    remediation: Remove public SQL exposure and restrict access to trusted private networks.
+    nis2_controls:
+      - NIS2-ART21-2-D
+      - NIS2-ART21-2-I
