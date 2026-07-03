@@ -9,6 +9,7 @@ from rich.table import Table
 from az_nis2.analyzers.configuration_analyzer import ConfigurationAnalyzer
 from az_nis2.collectors.azure_inventory_collector import AzureInventoryCollector
 from az_nis2.compliance.nis2_mapper import NIS2ComplianceEvaluator
+from az_nis2.scoring.risk_scorer import RiskScorer
 
 
 def main() -> None:
@@ -32,12 +33,16 @@ def main() -> None:
     compliance_evaluator = NIS2ComplianceEvaluator("benchmarks/nis2_controls.yml")
     compliance = compliance_evaluator.evaluate(findings)
 
+    risk_scorer = RiskScorer()
+    risk = risk_scorer.score(inventory, findings, compliance)
+
     output_dir = Path("outputs")
     output_dir.mkdir(exist_ok=True)
 
     inventory_file = output_dir / "inventory.json"
     findings_file = output_dir / "findings.json"
     compliance_file = output_dir / "compliance.json"
+    risk_file = output_dir / "risk.json"
 
     inventory_file.write_text(
         json.dumps(inventory, indent=2),
@@ -51,6 +56,11 @@ def main() -> None:
 
     compliance_file.write_text(
         json.dumps(compliance, indent=2),
+        encoding="utf-8"
+    )
+
+    risk_file.write_text(
+        json.dumps(risk, indent=2),
         encoding="utf-8"
     )
 
@@ -100,11 +110,40 @@ def main() -> None:
             control["title"]
         )
 
+    risk_table = Table(title="Risk Summary")
+    risk_table.add_column("Metric")
+    risk_table.add_column("Value")
+
+    overall = risk["overall"]
+
+    risk_table.add_row("Risk Grade", overall["risk_grade"])
+    risk_table.add_row("Final Score", f"{overall['score_percent']}%")
+    risk_table.add_row("Base Score", f"{overall['base_score_percent']}%")
+    risk_table.add_row("Total Resources", str(overall["total_resources"]))
+    risk_table.add_row("Total Findings", str(overall["total_findings"]))
+    risk_table.add_row("Failed NIS2 Controls", str(overall["failed_controls"]))
+
+    top_resources_table = Table(title="Top Risky Resources")
+    top_resources_table.add_column("Resource")
+    top_resources_table.add_column("Type")
+    top_resources_table.add_column("Findings")
+    top_resources_table.add_column("Risk %")
+
+    for resource in risk["resources"][:5]:
+        top_resources_table.add_row(
+            resource["name"],
+            resource["type"],
+            str(resource["findings_count"]),
+            f"{resource['normalized_score_percent']}%"
+        )
+
     summary = compliance["summary"]
 
     console.print(inventory_table)
     console.print(findings_table)
     console.print(compliance_table)
+    console.print(risk_table)
+    console.print(top_resources_table)
 
     console.print(
         "\nCompliance NIS2: "
@@ -115,6 +154,7 @@ def main() -> None:
     console.print(f"\nInventory salvato in: {inventory_file}")
     console.print(f"Findings salvati in: {findings_file}")
     console.print(f"Compliance salvata in: {compliance_file}")
+    console.print(f"Risk salvato in: {risk_file}")
 
 
 if __name__ == "__main__":
