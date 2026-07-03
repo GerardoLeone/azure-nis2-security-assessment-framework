@@ -9,6 +9,7 @@ from rich.table import Table
 from az_nis2.analyzers.configuration_analyzer import ConfigurationAnalyzer
 from az_nis2.collectors.azure_inventory_collector import AzureInventoryCollector
 from az_nis2.compliance.nis2_mapper import NIS2ComplianceEvaluator
+from az_nis2.reporting.reporting_engine import ReportingEngine
 from az_nis2.scoring.risk_scorer import RiskScorer
 
 
@@ -43,6 +44,7 @@ def main() -> None:
     findings_file = output_dir / "findings.json"
     compliance_file = output_dir / "compliance.json"
     risk_file = output_dir / "risk.json"
+    report_file = output_dir / "security_assessment_report.pdf"
 
     inventory_file.write_text(
         json.dumps(inventory, indent=2),
@@ -62,6 +64,15 @@ def main() -> None:
     risk_file.write_text(
         json.dumps(risk, indent=2),
         encoding="utf-8"
+    )
+
+    reporting_engine = ReportingEngine()
+    reporting_engine.generate_pdf(
+        inventory=inventory,
+        findings=findings,
+        compliance=compliance,
+        risk=risk,
+        output_path=report_file,
     )
 
     console = Console()
@@ -155,6 +166,7 @@ def main() -> None:
     console.print(f"Findings salvati in: {findings_file}")
     console.print(f"Compliance salvata in: {compliance_file}")
     console.print(f"Risk salvato in: {risk_file}")
+    console.print(f"Report PDF salvato in: {report_file}")
 
 
 if __name__ == "__main__":
