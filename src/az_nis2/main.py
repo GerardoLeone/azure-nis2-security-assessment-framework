@@ -8,6 +8,7 @@ from rich.table import Table
 
 from az_nis2.analyzers.configuration_analyzer import ConfigurationAnalyzer
 from az_nis2.collectors.azure_inventory_collector import AzureInventoryCollector
+from az_nis2.compliance.nis2_mapper import NIS2ComplianceEvaluator
 
 
 def main() -> None:
@@ -28,11 +29,15 @@ def main() -> None:
     analyzer = ConfigurationAnalyzer("rules/azure_security_rules.yml")
     findings = analyzer.analyze(inventory)
 
+    compliance_evaluator = NIS2ComplianceEvaluator("benchmarks/nis2_controls.yml")
+    compliance = compliance_evaluator.evaluate(findings)
+
     output_dir = Path("outputs")
     output_dir.mkdir(exist_ok=True)
 
     inventory_file = output_dir / "inventory.json"
     findings_file = output_dir / "findings.json"
+    compliance_file = output_dir / "compliance.json"
 
     inventory_file.write_text(
         json.dumps(inventory, indent=2),
@@ -41,6 +46,11 @@ def main() -> None:
 
     findings_file.write_text(
         json.dumps(findings, indent=2),
+        encoding="utf-8"
+    )
+
+    compliance_file.write_text(
+        json.dumps(compliance, indent=2),
         encoding="utf-8"
     )
 
@@ -76,11 +86,35 @@ def main() -> None:
             finding["title"]
         )
 
+    compliance_table = Table(title="NIS2 Compliance Summary")
+    compliance_table.add_column("Control")
+    compliance_table.add_column("Status")
+    compliance_table.add_column("Findings")
+    compliance_table.add_column("Title")
+
+    for control in compliance["controls"]:
+        compliance_table.add_row(
+            control["control_id"],
+            control["status"],
+            str(control["findings_count"]),
+            control["title"]
+        )
+
+    summary = compliance["summary"]
+
     console.print(inventory_table)
     console.print(findings_table)
+    console.print(compliance_table)
+
+    console.print(
+        "\nCompliance NIS2: "
+        f"{summary['passed_controls']}/{summary['total_controls']} controlli PASS "
+        f"({summary['compliance_percentage']}%)"
+    )
 
     console.print(f"\nInventory salvato in: {inventory_file}")
     console.print(f"Findings salvati in: {findings_file}")
+    console.print(f"Compliance salvata in: {compliance_file}")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,91 @@
+framework: "NIS2"
+version: "Directive (EU) 2022/2555 - Article 21"
+description: >
+  Mapping tecnico interpretativo tra misconfigurazioni Azure e requisiti NIS2.
+  Il mapping non rappresenta una checklist ufficiale NIS2, ma collega finding
+  cloud concreti ai requisiti di cybersecurity risk-management dell'Articolo 21.
+
+controls:
+  - id: "NIS2-ART21-2-A"
+    title: "Risk analysis and information system security policies"
+    framework: "NIS2 Article 21(2)(a)"
+    description: >
+      Le entità devono adottare politiche di analisi dei rischi e sicurezza dei sistemi informativi.
+      Le misconfigurazioni cloud rilevate indicano carenze nella gestione tecnica del rischio.
+    rules:
+      - "AZ-STORAGE-001"
+      - "AZ-STORAGE-002"
+      - "AZ-STORAGE-003"
+      - "AZ-STORAGE-004"
+      - "AZ-KV-001"
+      - "AZ-KV-002"
+      - "AZ-NSG-001"
+      - "AZ-NSG-002"
+      - "AZ-NSG-003"
+      - "AZ-NSG-004"
+    remediation: >
+      Definire e applicare policy tecniche di hardening cloud, controllo esposizione pubblica,
+      revisione periodica delle configurazioni e monitoraggio continuo delle risorse Azure.
+
+  - id: "NIS2-ART21-2-E"
+    title: "Security in network and information systems acquisition, development and maintenance"
+    framework: "NIS2 Article 21(2)(e)"
+    description: >
+      Le configurazioni di rete, storage e servizi cloud devono essere mantenute sicure durante
+      l'intero ciclo di vita dei sistemi, includendo gestione delle vulnerabilità e configurazioni errate.
+    rules:
+      - "AZ-STORAGE-001"
+      - "AZ-STORAGE-003"
+      - "AZ-STORAGE-004"
+      - "AZ-KV-001"
+      - "AZ-KV-002"
+      - "AZ-NSG-001"
+      - "AZ-NSG-002"
+      - "AZ-NSG-003"
+      - "AZ-NSG-004"
+    remediation: >
+      Applicare baseline di configurazione sicura, limitare l'esposizione pubblica,
+      usare private endpoint o reti selezionate e rimuovere regole firewall/NSG permissive.
+
+  - id: "NIS2-ART21-2-H"
+    title: "Policies and procedures regarding cryptography and encryption"
+    framework: "NIS2 Article 21(2)(h)"
+    description: >
+      Le comunicazioni e il trasferimento dei dati devono usare meccanismi adeguati di cifratura.
+      Configurazioni che consentono traffico non cifrato violano questa aspettativa tecnica.
+    rules:
+      - "AZ-STORAGE-002"
+    remediation: >
+      Abilitare HTTPS-only / secure transfer required sugli Storage Account e applicare
+      configurazioni TLS coerenti con le best practice.
+
+  - id: "NIS2-ART21-2-I"
+    title: "Human resources security, access control policies and asset management"
+    framework: "NIS2 Article 21(2)(i)"
+    description: >
+      L'accesso alle risorse deve essere controllato e limitato. Risorse amministrative,
+      dati o segreti raggiungibili pubblicamente aumentano la superficie d'attacco.
+    rules:
+      - "AZ-STORAGE-001"
+      - "AZ-STORAGE-004"
+      - "AZ-KV-001"
+      - "AZ-KV-002"
+      - "AZ-NSG-001"
+      - "AZ-NSG-002"
+      - "AZ-NSG-004"
+    remediation: >
+      Applicare principi di least privilege, limitare accessi pubblici, usare sorgenti IP fidate,
+      private endpoint e controlli di rete restrittivi.
+
+  - id: "NIS2-ART21-2-J"
+    title: "Multi-factor authentication, secure communications and secured emergency communication systems"
+    framework: "NIS2 Article 21(2)(j)"
+    description: >
+      I canali di accesso e comunicazione devono essere protetti. Porte amministrative o servizi
+      esposti pubblicamente richiedono controlli rafforzati e accessi sicuri.
+    rules:
+      - "AZ-NSG-001"
+      - "AZ-NSG-002"
+    remediation: >
+      Evitare esposizione diretta di SSH/RDP su Internet. Usare VPN, Bastion, accessi just-in-time,
+      MFA e restrizioni su indirizzi IP affidabili.
