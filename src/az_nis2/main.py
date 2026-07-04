@@ -48,22 +48,22 @@ def main() -> None:
 
     inventory_file.write_text(
         json.dumps(inventory, indent=2),
-        encoding="utf-8"
+        encoding="utf-8",
     )
 
     findings_file.write_text(
         json.dumps(findings, indent=2),
-        encoding="utf-8"
+        encoding="utf-8",
     )
 
     compliance_file.write_text(
         json.dumps(compliance, indent=2),
-        encoding="utf-8"
+        encoding="utf-8",
     )
 
     risk_file.write_text(
         json.dumps(risk, indent=2),
-        encoding="utf-8"
+        encoding="utf-8",
     )
 
     reporting_engine = ReportingEngine()
@@ -86,11 +86,11 @@ def main() -> None:
 
     for resource in inventory:
         inventory_table.add_row(
-            resource["name"],
-            resource["type"],
-            resource["location"] or "-",
+            resource.get("name", "-"),
+            resource.get("type", "-"),
+            resource.get("location") or "-",
             "yes" if resource.get("configuration") else "no",
-            str(len(resource.get("collection_errors", [])))
+            str(len(resource.get("collection_errors", []))),
         )
 
     findings_table = Table(title="Security Findings")
@@ -101,10 +101,10 @@ def main() -> None:
 
     for finding in findings:
         findings_table.add_row(
-            finding["severity"],
-            finding["rule_id"],
-            finding["resource"]["name"],
-            finding["title"]
+            finding.get("severity", "-"),
+            finding.get("rule_id", "-"),
+            finding.get("resource", {}).get("name", "-"),
+            finding.get("title", "-"),
         )
 
     compliance_table = Table(title="NIS2 Compliance Summary")
@@ -113,26 +113,37 @@ def main() -> None:
     compliance_table.add_column("Findings")
     compliance_table.add_column("Title")
 
-    for control in compliance["controls"]:
+    for control in compliance.get("controls", []):
         compliance_table.add_row(
-            control["control_id"],
-            control["status"],
-            str(control["findings_count"]),
-            control["title"]
+            control.get("control_id", "-"),
+            control.get("status", "-"),
+            str(control.get("findings_count", 0)),
+            control.get("title", "-"),
         )
+
+    overall = risk.get("overall", {})
 
     risk_table = Table(title="Risk Summary")
     risk_table.add_column("Metric")
     risk_table.add_column("Value")
 
-    overall = risk["overall"]
-
-    risk_table.add_row("Risk Grade", overall["risk_grade"])
-    risk_table.add_row("Final Score", f"{overall['score_percent']}%")
-    risk_table.add_row("Base Score", f"{overall['base_score_percent']}%")
-    risk_table.add_row("Total Resources", str(overall["total_resources"]))
-    risk_table.add_row("Total Findings", str(overall["total_findings"]))
-    risk_table.add_row("Failed NIS2 Controls", str(overall["failed_controls"]))
+    risk_table.add_row("Risk Grade", str(overall.get("risk_grade", "-")))
+    risk_table.add_row("Final Score", f"{overall.get('score_percent', 0)}%")
+    risk_table.add_row("Base Score", f"{overall.get('base_score_percent', 0)}%")
+    risk_table.add_row(
+        "Discovered Resources",
+        str(overall.get("discovered_resources", overall.get("total_resources", 0))),
+    )
+    risk_table.add_row(
+        "Assessed Resources",
+        str(overall.get("assessed_resources", 0)),
+    )
+    risk_table.add_row(
+        "Unassessed Resources",
+        str(overall.get("unassessed_resources", 0)),
+    )
+    risk_table.add_row("Total Findings", str(overall.get("total_findings", 0)))
+    risk_table.add_row("Failed NIS2 Controls", str(overall.get("failed_controls", 0)))
 
     top_resources_table = Table(title="Top Risky Resources")
     top_resources_table.add_column("Resource")
@@ -140,15 +151,27 @@ def main() -> None:
     top_resources_table.add_column("Findings")
     top_resources_table.add_column("Risk %")
 
-    for resource in risk["resources"][:5]:
+    for resource in risk.get("resources", [])[:5]:
         top_resources_table.add_row(
-            resource["name"],
-            resource["type"],
-            str(resource["findings_count"]),
-            f"{resource['normalized_score_percent']}%"
+            resource.get("resource_name", resource.get("name", "-")),
+            resource.get("resource_type", resource.get("type", "-")),
+            str(resource.get("findings_count", 0)),
+            f"{resource.get('normalized_score_percent', 0)}%",
         )
 
-    summary = compliance["summary"]
+    unassessed_table = Table(title="Unassessed Resources")
+    unassessed_table.add_column("Resource")
+    unassessed_table.add_column("Type")
+    unassessed_table.add_column("Reason")
+
+    for resource in risk.get("unassessed_resources", []):
+        unassessed_table.add_row(
+            resource.get("resource_name", "-"),
+            resource.get("resource_type", "-"),
+            resource.get("reason", "-"),
+        )
+
+    summary = compliance.get("summary", {})
 
     console.print(inventory_table)
     console.print(findings_table)
@@ -156,10 +179,13 @@ def main() -> None:
     console.print(risk_table)
     console.print(top_resources_table)
 
+    if risk.get("unassessed_resources"):
+        console.print(unassessed_table)
+
     console.print(
         "\nCompliance NIS2: "
-        f"{summary['passed_controls']}/{summary['total_controls']} controlli PASS "
-        f"({summary['compliance_percentage']}%)"
+        f"{summary.get('passed_controls', 0)}/{summary.get('total_controls', 0)} controlli PASS "
+        f"({summary.get('compliance_percentage', 0)}%)"
     )
 
     console.print(f"\nInventory salvato in: {inventory_file}")
