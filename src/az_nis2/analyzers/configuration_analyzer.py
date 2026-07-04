@@ -66,13 +66,82 @@ class ConfigurationAnalyzer:
             "storage_container_public_access_enabled": self._storage_container_public_access_enabled,
             "keyvault_public_network_access_enabled": self._keyvault_public_network_access_enabled,
             "keyvault_default_action_allow": self._keyvault_default_action_allow,
-            "nsg_inbound_port_open_to_internet": self._nsg_inbound_port_open_to_internet
+            "nsg_inbound_port_open_to_internet": self._nsg_inbound_port_open_to_internet,
+            "webapp_https_only_disabled": self._webapp_https_only_disabled,
+            "webapp_ftps_all_allowed": self._webapp_ftps_all_allowed,
+            "webapp_public_network_access_enabled": self._webapp_public_network_access_enabled,
+            "sql_public_network_access_enabled": self._sql_public_network_access_enabled,
+            "sql_firewall_allows_all_internet": self._sql_firewall_allows_all_internet,
         }
 
         if check_name not in checks:
             raise ValueError(f"Unknown check: {check_name}")
 
         return checks[check_name](resource, rule.get("params", {}))
+
+    @staticmethod
+    def _webapp_https_only_disabled(resource: dict, params: dict) -> dict:
+        value = resource.get("configuration", {}).get("https_only")
+
+        return {
+            "passed": value is not False,
+            "evidence": {
+                "https_only": value
+            }
+        }
+
+    @staticmethod
+    def _webapp_ftps_all_allowed(resource: dict, params: dict) -> dict:
+        value = resource.get("configuration", {}).get("ftps_state")
+
+        return {
+            "passed": value != "AllAllowed",
+            "evidence": {
+                "ftps_state": value
+            }
+        }
+
+    @staticmethod
+    def _webapp_public_network_access_enabled(resource: dict, params: dict) -> dict:
+        value = resource.get("configuration", {}).get("public_network_access")
+
+        return {
+            "passed": value != "Enabled",
+            "evidence": {
+                "public_network_access": value
+            }
+        }
+
+    @staticmethod
+    def _sql_public_network_access_enabled(resource: dict, params: dict) -> dict:
+        value = resource.get("configuration", {}).get("public_network_access")
+
+        return {
+            "passed": value != "Enabled",
+            "evidence": {
+                "public_network_access": value
+            }
+        }
+
+    @staticmethod
+    def _sql_firewall_allows_all_internet(resource: dict, params: dict) -> dict:
+        firewall_rules = resource.get("configuration", {}).get("firewall_rules", [])
+
+        matched_rules = []
+
+        for rule in firewall_rules:
+            if (
+                    rule.get("start_ip_address") == "0.0.0.0"
+                    and rule.get("end_ip_address") == "255.255.255.255"
+            ):
+                matched_rules.append(rule)
+
+        return {
+            "passed": len(matched_rules) == 0,
+            "evidence": {
+                "matched_firewall_rules": matched_rules
+            }
+        }
 
     @staticmethod
     def _storage_allow_blob_public_access_enabled(resource: dict, params: dict) -> dict:

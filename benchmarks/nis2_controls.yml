@@ -23,6 +23,11 @@ controls:
       - "AZ-NSG-002"
       - "AZ-NSG-003"
       - "AZ-NSG-004"
+      - "AZ-WEB-001"
+      - "AZ-WEB-002"
+      - "AZ-WEB-003"
+      - "AZ-SQL-001"
+      - "AZ-SQL-002"
     remediation: >
       Definire e applicare policy tecniche di hardening cloud, controllo esposizione pubblica,
       revisione periodica delle configurazioni e monitoraggio continuo delle risorse Azure.
@@ -43,6 +48,11 @@ controls:
       - "AZ-NSG-002"
       - "AZ-NSG-003"
       - "AZ-NSG-004"
+      - "AZ-WEB-001"
+      - "AZ-WEB-002"
+      - "AZ-WEB-003"
+      - "AZ-SQL-001"
+      - "AZ-SQL-002"
     remediation: >
       Applicare baseline di configurazione sicura, limitare l'esposizione pubblica,
       usare private endpoint o reti selezionate e rimuovere regole firewall/NSG permissive.
@@ -55,6 +65,8 @@ controls:
       Configurazioni che consentono traffico non cifrato violano questa aspettativa tecnica.
     rules:
       - "AZ-STORAGE-002"
+      - "AZ-WEB-001"
+      - "AZ-WEB-002"
     remediation: >
       Abilitare HTTPS-only / secure transfer required sugli Storage Account e applicare
       configurazioni TLS coerenti con le best practice.
@@ -73,6 +85,10 @@ controls:
       - "AZ-NSG-001"
       - "AZ-NSG-002"
       - "AZ-NSG-004"
+      - "AZ-WEB-002"
+      - "AZ-WEB-003"
+      - "AZ-SQL-001"
+      - "AZ-SQL-002"
     remediation: >
       Applicare principi di least privilege, limitare accessi pubblici, usare sorgenti IP fidate,
       private endpoint e controlli di rete restrittivi.

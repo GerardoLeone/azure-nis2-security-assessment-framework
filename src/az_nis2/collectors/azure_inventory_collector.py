@@ -6,6 +6,8 @@ from azure.mgmt.keyvault import KeyVaultManagementClient
 from azure.mgmt.network import NetworkManagementClient
 from azure.mgmt.resource.resources import ResourceManagementClient
 from azure.mgmt.storage import StorageManagementClient
+from azure.mgmt.sql import SqlManagementClient
+from azure.mgmt.web import WebSiteManagementClient
 
 
 class AzureInventoryCollector:
@@ -29,6 +31,16 @@ class AzureInventoryCollector:
         )
 
         self.network_client = NetworkManagementClient(
+            credential=self.credential,
+            subscription_id=self.subscription_id
+        )
+
+        self.web_client = WebSiteManagementClient(
+            credential=self.credential,
+            subscription_id=self.subscription_id
+        )
+
+        self.sql_client = SqlManagementClient(
             credential=self.credential,
             subscription_id=self.subscription_id
         )
@@ -64,6 +76,12 @@ class AzureInventoryCollector:
 
         elif resource_type == "microsoft.network/networksecuritygroups":
             self._collect_nsg_config(resource)
+
+        elif resource_type == "microsoft.web/sites":
+            self._collect_web_app_config(resource)
+
+        elif resource_type == "microsoft.sql/servers":
+            self._collect_sql_server_config(resource)
 
     def _collect_storage_account_config(self, resource: dict) -> None:
         resource_group = resource["resource_group"]
@@ -184,6 +202,114 @@ class AzureInventoryCollector:
         except Exception as exc:
             resource["collection_errors"].append(
                 f"Unable to collect NSG configuration: {exc}"
+            )
+
+    def _collect_web_app_config(self, resource: dict) -> None:
+        resource_group = resource["resource_group"]
+        app_name = resource["name"]
+
+        try:
+            site = self.web_client.web_apps.get(
+                resource_group_name=resource_group,
+                name=app_name
+            )
+
+            config = self.web_client.web_apps.get_configuration(
+                resource_group_name=resource_group,
+                name=app_name
+            )
+
+            ip_restrictions = []
+            for restriction in getattr(config, "ip_security_restrictions", None) or []:
+                ip_restrictions.append({
+                    "name": getattr(restriction, "name", None),
+                    "action": getattr(restriction, "action", None),
+                    "ip_address": getattr(restriction, "ip_address", None),
+                    "priority": getattr(restriction, "priority", None),
+                    "description": getattr(restriction, "description", None)
+                })
+
+            scm_ip_restrictions = []
+            for restriction in getattr(config, "scm_ip_security_restrictions", None) or []:
+                scm_ip_restrictions.append({
+                    "name": getattr(restriction, "name", None),
+                    "action": getattr(restriction, "action", None),
+                    "ip_address": getattr(restriction, "ip_address", None),
+                    "priority": getattr(restriction, "priority", None),
+                    "description": getattr(restriction, "description", None)
+                })
+
+            resource["configuration"] = {
+                "https_only": getattr(site, "https_only", None),
+                "public_network_access": self._clean_value(
+                    getattr(site, "public_network_access", None)
+                ),
+                "ftps_state": self._clean_value(
+                    getattr(config, "ftps_state", None)
+                ),
+                "min_tls_version": self._clean_value(
+                    getattr(config, "min_tls_version", None)
+                ),
+                "scm_min_tls_version": self._clean_value(
+                    getattr(config, "scm_min_tls_version", None)
+                ),
+                "remote_debugging_enabled": getattr(
+                    config,
+                    "remote_debugging_enabled",
+                    None
+                ),
+                "ip_security_restrictions": ip_restrictions,
+                "scm_ip_security_restrictions": scm_ip_restrictions
+            }
+
+        except Exception as exc:
+            resource["collection_errors"].append(
+                f"Unable to collect web app configuration: {exc}"
+            )
+
+    def _collect_sql_server_config(self, resource: dict) -> None:
+        resource_group = resource["resource_group"]
+        server_name = resource["name"]
+
+        try:
+            server = self.sql_client.servers.get(
+                resource_group_name=resource_group,
+                server_name=server_name
+            )
+
+            firewall_rules = []
+
+            try:
+                for rule in self.sql_client.firewall_rules.list_by_server(
+                        resource_group_name=resource_group,
+                        server_name=server_name
+                ):
+                    firewall_rules.append({
+                        "name": rule.name,
+                        "start_ip_address": rule.start_ip_address,
+                        "end_ip_address": rule.end_ip_address
+                    })
+            except Exception as exc:
+                resource["collection_errors"].append(
+                    f"Unable to list SQL firewall rules: {exc}"
+                )
+
+            resource["configuration"] = {
+                "public_network_access": self._clean_value(
+                    getattr(server, "public_network_access", None)
+                ),
+                "minimal_tls_version": self._clean_value(
+                    getattr(server, "minimal_tls_version", None)
+                ),
+                "restrict_outbound_network_access": self._clean_value(
+                    getattr(server, "restrict_outbound_network_access", None)
+                ),
+                "firewall_rules": firewall_rules
+            }
+
+        except Exception as exc:
+            resource["collection_errors"].append(
+                f"Unable to collect SQL server configuration: {exc}"
             )
 
     @staticmethod

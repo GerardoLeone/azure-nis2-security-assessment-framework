@@ -198,3 +198,95 @@ rules:
       - NIS2-ART21-2-A
       - NIS2-ART21-2-E
       - NIS2-ART21-2-I
+
+  - id: AZ-WEB-001
+    title: Web App does not enforce HTTPS-only traffic
+    resource_type: Microsoft.Web/sites
+    check: webapp_https_only_disabled
+    severity: High
+    message: Web App HTTPS-only setting is disabled.
+    description: Web App allows HTTP traffic without enforcing HTTPS.
+    rationale: >
+      Web applications should enforce HTTPS to protect data in transit and prevent downgrade or interception risks.
+    remediation: Enable HTTPS-only on the Web App.
+    references:
+      - "https://learn.microsoft.com/azure/app-service/configure-ssl-bindings"
+      - "https://learn.microsoft.com/azure/app-service/configure-common"
+    nis2_controls:
+      - NIS2-ART21-2-A
+      - NIS2-ART21-2-E
+      - NIS2-ART21-2-H
+
+  - id: AZ-WEB-002
+    title: Web App allows insecure FTP access
+    resource_type: Microsoft.Web/sites
+    check: webapp_ftps_all_allowed
+    severity: High
+    message: Web App FTPS state allows both FTP and FTPS.
+    description: Web App is configured with FTPS state AllAllowed.
+    rationale: >
+      Allowing plain FTP can expose credentials and deployment data in transit. FTPS-only or disabled FTP access is safer.
+    remediation: Set Web App FTPS state to FtpsOnly or Disabled.
+    references:
+      - "https://learn.microsoft.com/azure/app-service/deploy-ftp"
+      - "https://learn.microsoft.com/azure/app-service/configure-common"
+    nis2_controls:
+      - NIS2-ART21-2-A
+      - NIS2-ART21-2-E
+      - NIS2-ART21-2-H
+      - NIS2-ART21-2-I
+
+  - id: AZ-WEB-003
+    title: Web App is reachable from public networks
+    resource_type: Microsoft.Web/sites
+    check: webapp_public_network_access_enabled
+    severity: Medium
+    message: Web App public network access is enabled.
+    description: Web App is reachable from public networks.
+    rationale: >
+      Public exposure increases the attack surface of the application. Access restrictions or private endpoints should be considered for sensitive workloads.
+    remediation: Restrict public network access where possible and configure access restrictions or private endpoints.
+    references:
+      - "https://learn.microsoft.com/azure/app-service/app-service-ip-restrictions"
+      - "https://learn.microsoft.com/azure/app-service/networking/private-endpoint"
+    nis2_controls:
+      - NIS2-ART21-2-A
+      - NIS2-ART21-2-E
+      - NIS2-ART21-2-I
+
+  - id: AZ-SQL-001
+    title: Azure SQL Server public network access is enabled
+    resource_type: Microsoft.Sql/servers
+    check: sql_public_network_access_enabled
+    severity: High
+    message: Azure SQL Server public network access is enabled.
+    description: Azure SQL Server is reachable through public network access.
+    rationale: >
+      Database services should not be unnecessarily reachable from public networks. Public access increases exposure to scanning and unauthorized connection attempts.
+    remediation: Disable public network access or restrict access through private endpoints and trusted networks.
+    references:
+      - "https://learn.microsoft.com/azure/azure-sql/database/connectivity-settings"
+      - "https://learn.microsoft.com/azure/azure-sql/database/private-endpoint-overview"
+    nis2_controls:
+      - NIS2-ART21-2-A
+      - NIS2-ART21-2-E
+      - NIS2-ART21-2-I
+
+  - id: AZ-SQL-002
+    title: Azure SQL firewall allows all Internet sources
+    resource_type: Microsoft.Sql/servers
+    check: sql_firewall_allows_all_internet
+    severity: Critical
+    message: Azure SQL firewall rule allows 0.0.0.0 - 255.255.255.255.
+    description: Azure SQL Server firewall allows access from all Internet IP addresses.
+    rationale: >
+      A firewall rule allowing the full IPv4 range exposes the database endpoint to arbitrary Internet sources.
+      This is a high-risk database exposure misconfiguration.
+    remediation: Remove the permissive firewall rule and allow only trusted IP ranges or private network access.
+    references:
+      - "https://learn.microsoft.com/azure/azure-sql/database/firewall-configure"
+      - "https://learn.microsoft.com/azure/azure-sql/database/network-access-controls-overview"
+    nis2_controls:
+      - NIS2-ART21-2-A
+      - NIS2-ART21-2-E
+      - NIS2-ART21-2-I
