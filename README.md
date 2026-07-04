@@ -122,6 +122,10 @@ azure-nis2-security-assessment-framework/
 │   └── azure_security_rules.yml
 ├── scripts/
 │   ├── provision_lab.ps1
+│   ├── run_assessment.ps1
+│   ├── status_lab.ps1
+│   ├── clean_outputs.ps1
+│   ├── manage_lab.ps1
 │   └── destroy_lab.ps1
 ├── src/
 │   └── az_nis2/
@@ -254,6 +258,57 @@ The framework will:
 5. compute risk score;
 6. generate JSON outputs;
 7. generate a PDF report.
+
+## Management Scripts
+
+The `scripts/` directory includes helper scripts for provisioning, assessment execution, status inspection, output cleanup and lab destruction.
+
+| Script | Purpose |
+|---|---|
+| `provision_lab.ps1` | Creates or updates the intentionally vulnerable Azure lab. |
+| `run_assessment.ps1` | Runs the complete assessment workflow and prints an output summary. |
+| `status_lab.ps1` | Lists current Azure resources in the target Resource Group and checks whether the lab matches the expected stable state. |
+| `clean_outputs.ps1` | Removes generated files from `outputs/` while preserving `.gitkeep`. |
+| `destroy_lab.ps1` | Deletes the entire lab Resource Group after explicit confirmation. |
+| `manage_lab.ps1` | Wrapper script used to call the main management actions from a single entry point. |
+
+### Check Lab Status
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\status_lab.ps1
+```
+
+This command verifies the configured subscription and Resource Group, lists all resources, groups them by resource type and highlights unexpected residual resources.
+
+### Run the Full Assessment
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run_assessment.ps1
+```
+
+This command sets `PYTHONPATH=src`, runs the framework through `python -m az_nis2.main`, and prints a summary of the generated outputs.
+
+### Clean Generated Outputs
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\clean_outputs.ps1
+```
+
+This command removes generated JSON and PDF files from `outputs/`, while keeping the `.gitkeep` file required by Git.
+
+### Use the Management Wrapper
+
+The same operations can be executed through `manage_lab.ps1`:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\manage_lab.ps1 -Action status
+powershell -ExecutionPolicy Bypass -File .\scripts\manage_lab.ps1 -Action provision
+powershell -ExecutionPolicy Bypass -File .\scripts\manage_lab.ps1 -Action run
+powershell -ExecutionPolicy Bypass -File .\scripts\manage_lab.ps1 -Action clean-outputs
+powershell -ExecutionPolicy Bypass -File .\scripts\manage_lab.ps1 -Action destroy
+```
+
+The `destroy` action calls `destroy_lab.ps1` and therefore still requires explicit confirmation before deleting the Resource Group.
 
 ## Outputs
 
