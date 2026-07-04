@@ -115,14 +115,26 @@ class ReportingEngine:
 
         summary_data = [
             ["Metric", "Value"],
-            ["Total Azure resources", str(len(inventory))],
+            ["Discovered Azure resources", str(overall.get("discovered_resources", len(inventory)))],
+            ["Assessed Azure resources", str(overall.get("assessed_resources", 0))],
+            ["Unassessed Azure resources", str(overall.get("unassessed_resources", 0))],
             ["Total findings", str(len(findings))],
             ["Risk grade", overall.get("risk_grade", "N/A")],
             ["Risk score", f"{overall.get('score_percent', 0)}%"],
+            ["Base score", f"{overall.get('base_score_percent', 0)}%"],
             ["NIS2 passed controls", str(compliance_summary.get("passed_controls", 0))],
             ["NIS2 failed controls", str(compliance_summary.get("failed_controls", 0))],
             ["NIS2 compliance", f"{compliance_summary.get('compliance_percentage', 0)}%"],
         ]
+
+        story.append(Spacer(1, 8))
+        story.append(Paragraph(
+            "Risk score methodology: discovered resources include all Azure resources found in the target Resource Group. "
+            "Assessed resources are the subset for which the framework collected configuration data and applied security rules. "
+            "Unassessed resources remain visible in the inventory but are excluded from the risk denominator.",
+            styles["BodyText"],
+        ))
+        story.append(Spacer(1, 12))
 
         story.append(self._make_table(summary_data, [220, 260]))
         story.append(Spacer(1, 16))
@@ -290,14 +302,39 @@ class ReportingEngine:
 
         for resource in resources:
             data.append([
-                resource.get("name", ""),
-                self._shorten(resource.get("type", ""), 36),
+                resource.get("resource_name", ""),
+                self._shorten(resource.get("resource_type", ""), 36),
                 str(resource.get("findings_count", 0)),
                 f"{resource.get('normalized_score_percent', 0)}%",
                 str(resource.get("sensitivity", "")),
             ])
 
         story.append(self._make_table(data, [120, 220, 55, 55, 50]))
+
+        unassessed_resources = risk.get("unassessed_resources", [])
+
+        if unassessed_resources:
+            story.append(Spacer(1, 16))
+            story.append(Paragraph("Unassessed Resources", styles["Heading2"]))
+            story.append(Paragraph(
+                "The following resources were discovered in the Azure Resource Group, "
+                "but no specific configuration collector is currently implemented for their resource type.",
+                styles["BodyText"],
+            ))
+            story.append(Spacer(1, 8))
+
+            unassessed_rows = [
+                ["Resource", "Type", "Reason"]
+            ]
+
+            for resource in unassessed_resources:
+                unassessed_rows.append([
+                    resource.get("resource_name", "-"),
+                    self._shorten(resource.get("resource_type", "-"), 35),
+                    resource.get("reason", "-"),
+                ])
+
+            story.append(self._make_table(unassessed_rows, [130, 150, 210]))
 
         return story
 
@@ -504,6 +541,25 @@ class ReportingEngine:
 
                 parts.append(
                     f"NSG rule '{rule_name}' with priority {priority} allows port(s) {ports} from source {source}."
+                )
+
+            return " ".join(parts)
+
+        if "matched_firewall_rules" in evidence:
+            matched_rules = evidence.get("matched_firewall_rules", [])
+
+            if not matched_rules:
+                return "No permissive SQL firewall rule detected."
+
+            parts = []
+
+            for rule in matched_rules:
+                rule_name = rule.get("name", "unknown")
+                start_ip = rule.get("start_ip_address", "unknown")
+                end_ip = rule.get("end_ip_address", "unknown")
+
+                parts.append(
+                    f"SQL firewall rule '{rule_name}' allows traffic from {start_ip} to {end_ip}."
                 )
 
             return " ".join(parts)
