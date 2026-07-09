@@ -6,6 +6,9 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+$ProjectRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+Set-Location $ProjectRoot
+
 function Invoke-Script {
     param([Parameter(Mandatory = $true)][string]$Path)
 

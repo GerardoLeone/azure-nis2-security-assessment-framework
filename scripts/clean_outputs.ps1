@@ -1,5 +1,8 @@
 $ErrorActionPreference = "Stop"
 
+$ProjectRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+Set-Location $ProjectRoot
+
 $outputDirectory = "outputs"
 
 if (-not (Test-Path $outputDirectory)) {
@@ -10,6 +13,7 @@ if (-not (Test-Path $outputDirectory)) {
 }
 
 Write-Host "Cleaning generated outputs..." -ForegroundColor Cyan
+Write-Host "Project Root: $ProjectRoot"
 
 Get-ChildItem $outputDirectory -Force |
     Where-Object { $_.Name -ne ".gitkeep" } |

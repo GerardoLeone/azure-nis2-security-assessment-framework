@@ -1,10 +1,13 @@
 $ErrorActionPreference = "Stop"
 
+$ProjectRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+Set-Location $ProjectRoot
+
 function Load-DotEnv {
-    param([string]$Path = ".env")
+    param([string]$Path = (Join-Path $ProjectRoot ".env"))
 
     if (-not (Test-Path $Path)) {
-        throw "File .env non trovato nella root del progetto."
+        throw "File .env non trovato nella root del progetto: $ProjectRoot"
     }
 
     Get-Content $Path | ForEach-Object {
@@ -52,7 +55,6 @@ function Get-JsonFile {
 
 Assert-CommandExists "az"
 Assert-CommandExists "python"
-
 Load-DotEnv
 
 $subscriptionId = $env:AZURE_SUBSCRIPTION_ID
@@ -67,6 +69,7 @@ if ([string]::IsNullOrWhiteSpace($resourceGroup)) {
 }
 
 Write-Host "Running Azure NIS2 Security Assessment Framework..." -ForegroundColor Cyan
+Write-Host "Project Root: $ProjectRoot"
 Write-Host "Subscription: $subscriptionId"
 Write-Host "Resource Group: $resourceGroup"
 Write-Host ""
@@ -74,13 +77,11 @@ Write-Host ""
 Invoke-Az @("account", "set", "--subscription", $subscriptionId)
 
 $activeSubscription = az account show --query "id" -o tsv
-
 if ($activeSubscription -ne $subscriptionId) {
     throw "La subscription attiva non coincide con AZURE_SUBSCRIPTION_ID."
 }
 
 $resourceGroupExists = az group exists --name $resourceGroup -o tsv
-
 if ($resourceGroupExists -ne "true") {
     throw "Resource Group non trovato: $resourceGroup"
 }
@@ -90,7 +91,6 @@ if (-not (Test-Path "outputs")) {
 }
 
 $env:PYTHONPATH = "src"
-
 python -m az_nis2.main
 
 if ($LASTEXITCODE -ne 0) {
@@ -118,11 +118,9 @@ if ($risk -ne $null -and $risk.overall -ne $null) {
 
 if ($findings -ne $null) {
     $findingsCount = @($findings.findings).Count
-
     if ($findingsCount -eq 0 -and $findings -is [array]) {
         $findingsCount = @($findings).Count
     }
-
     Write-Host "Findings file entries: $findingsCount"
 }
 
@@ -132,5 +130,4 @@ if ($compliance -ne $null -and $compliance.summary -ne $null) {
 
 Write-Host ""
 Write-Host "Generated files:" -ForegroundColor Cyan
-
 Get-ChildItem "outputs" -File | Select-Object Name, Length, LastWriteTime | Format-Table -AutoSize

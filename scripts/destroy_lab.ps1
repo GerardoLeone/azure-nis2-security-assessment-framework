@@ -1,10 +1,13 @@
 $ErrorActionPreference = "Stop"
 
+$ProjectRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+Set-Location $ProjectRoot
+
 function Load-DotEnv {
-    param([string]$Path = ".env")
+    param([string]$Path = (Join-Path $ProjectRoot ".env"))
 
     if (-not (Test-Path $Path)) {
-        throw "File .env non trovato nella root del progetto."
+        throw "File .env non trovato nella root del progetto: $ProjectRoot"
     }
 
     Get-Content $Path | ForEach-Object {
@@ -13,6 +16,14 @@ function Load-DotEnv {
             $value = $matches[2].Trim().Trim('"').Trim("'")
             [Environment]::SetEnvironmentVariable($name, $value, "Process")
         }
+    }
+}
+
+function Assert-CommandExists {
+    param([Parameter(Mandatory = $true)][string]$Command)
+
+    if (-not (Get-Command $Command -ErrorAction SilentlyContinue)) {
+        throw "Comando richiesto non trovato: $Command"
     }
 }
 
@@ -26,6 +37,7 @@ function Invoke-Az {
     }
 }
 
+Assert-CommandExists "az"
 Load-DotEnv
 
 $subscriptionId = $env:AZURE_SUBSCRIPTION_ID
@@ -40,6 +52,7 @@ if ([string]::IsNullOrWhiteSpace($resourceGroup)) {
 }
 
 Write-Host "Azure NIS2 lab destroy script" -ForegroundColor Yellow
+Write-Host "Project Root: $ProjectRoot"
 Write-Host "Subscription: $subscriptionId"
 Write-Host "Resource Group: $resourceGroup"
 Write-Host ""
@@ -47,13 +60,11 @@ Write-Host ""
 Invoke-Az @("account", "set", "--subscription", $subscriptionId)
 
 $activeSubscription = az account show --query "id" -o tsv
-
 if ($activeSubscription -ne $subscriptionId) {
     throw "La subscription attiva non coincide con AZURE_SUBSCRIPTION_ID."
 }
 
 $resourceGroupExists = az group exists --name $resourceGroup -o tsv
-
 if ($resourceGroupExists -ne "true") {
     Write-Host "Resource Group non trovato. Nessuna risorsa da eliminare." -ForegroundColor Green
     exit 0
@@ -67,19 +78,17 @@ az resource list `
     -o table
 
 Write-Host ""
-Write-Host "ATTENZIONE: questa operazione eliminerà l'intero Resource Group e tutte le risorse contenute." -ForegroundColor Red
+Write-Host "ATTENZIONE: questa operazione eliminera l'intero Resource Group e tutte le risorse contenute." -ForegroundColor Red
 Write-Host "Resource Group target: $resourceGroup" -ForegroundColor Red
 Write-Host ""
 
 $confirmation = Read-Host "Per confermare, digita esattamente DELETE"
-
 if ($confirmation -ne "DELETE") {
     Write-Host "Operazione annullata. Nessuna risorsa eliminata." -ForegroundColor Yellow
     exit 0
 }
 
 $resourceGroupConfirmation = Read-Host "Digita il nome del Resource Group per confermare definitivamente"
-
 if ($resourceGroupConfirmation -ne $resourceGroup) {
     Write-Host "Nome Resource Group non corrispondente. Operazione annullata." -ForegroundColor Yellow
     exit 0

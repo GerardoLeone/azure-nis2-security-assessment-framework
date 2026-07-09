@@ -1,10 +1,13 @@
 $ErrorActionPreference = "Stop"
 
+$ProjectRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
+Set-Location $ProjectRoot
+
 function Load-DotEnv {
-    param([string]$Path = ".env")
+    param([string]$Path = (Join-Path $ProjectRoot ".env"))
 
     if (-not (Test-Path $Path)) {
-        throw "File .env non trovato nella root del progetto."
+        throw "File .env non trovato nella root del progetto: $ProjectRoot"
     }
 
     Get-Content $Path | ForEach-Object {
@@ -35,7 +38,6 @@ function Invoke-Az {
 }
 
 Assert-CommandExists "az"
-
 Load-DotEnv
 
 $subscriptionId = $env:AZURE_SUBSCRIPTION_ID
@@ -50,6 +52,7 @@ if ([string]::IsNullOrWhiteSpace($resourceGroup)) {
 }
 
 Write-Host "Azure NIS2 lab status" -ForegroundColor Cyan
+Write-Host "Project Root: $ProjectRoot"
 Write-Host "Subscription: $subscriptionId"
 Write-Host "Resource Group: $resourceGroup"
 Write-Host ""
@@ -57,13 +60,11 @@ Write-Host ""
 Invoke-Az @("account", "set", "--subscription", $subscriptionId)
 
 $activeSubscription = az account show --query "id" -o tsv
-
 if ($activeSubscription -ne $subscriptionId) {
     throw "La subscription attiva non coincide con AZURE_SUBSCRIPTION_ID."
 }
 
 $resourceGroupExists = az group exists --name $resourceGroup -o tsv
-
 if ($resourceGroupExists -ne "true") {
     Write-Host "Resource Group non trovato." -ForegroundColor Yellow
     exit 0
@@ -77,12 +78,10 @@ $resourcesJson = az resource list `
 $resources = $resourcesJson | ConvertFrom-Json
 
 Write-Host "Resources:" -ForegroundColor Cyan
-
 $resources | Sort-Object Type, Name | Format-Table Name, Type, Location -AutoSize
 
 Write-Host ""
 Write-Host "Resource counts by type:" -ForegroundColor Cyan
-
 $resources |
     Group-Object Type |
     Sort-Object Name |
