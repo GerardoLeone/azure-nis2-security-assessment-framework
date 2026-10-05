@@ -34,7 +34,6 @@ rules:
       - "https://learn.microsoft.com/azure/storage/blobs/security-recommendations"
     nis2_controls:
       - NIS2-ART21-2-A
-      - NIS2-ART21-2-E
       - NIS2-ART21-2-H
 
   - id: AZ-STORAGE-003
@@ -53,7 +52,6 @@ rules:
     nis2_controls:
       - NIS2-ART21-2-A
       - NIS2-ART21-2-E
-      - NIS2-ART21-2-I
 
   - id: AZ-STORAGE-004
     title: Blob container allows anonymous access
@@ -175,7 +173,6 @@ rules:
     nis2_controls:
       - NIS2-ART21-2-A
       - NIS2-ART21-2-E
-      - NIS2-ART21-2-H
 
   - id: AZ-NSG-004
     title: SQL Server port exposed to the Internet
