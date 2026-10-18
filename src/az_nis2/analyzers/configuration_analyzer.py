@@ -21,7 +21,7 @@ class ConfigurationAnalyzer:
 
         for resource in inventory:
             for rule in self.rules:
-                if not self._rule_applies_to_resource(rule, resource):
+                if not self._rule_applies_to_resource(rule, resource): #verifica che la regola è applicabile
                     continue
 
                 result = self._evaluate_rule(rule, resource)
@@ -59,6 +59,7 @@ class ConfigurationAnalyzer:
     def _evaluate_rule(self, rule: dict, resource: dict) -> dict:
         check_name = rule["check"]
 
+        # dizionario chiave-valore, contiene riferimenti alle funzioni
         checks = {
             "storage_allow_blob_public_access_enabled": self._storage_allow_blob_public_access_enabled,
             "storage_https_only_disabled": self._storage_https_only_disabled,
@@ -241,7 +242,7 @@ class ConfigurationAnalyzer:
                     "name": rule.get("name"),
                     "priority": rule.get("priority"),
                     "source": self._get_rule_sources(rule),
-                    "destination_ports": self._get_rule_destination_ports(rule),
+                    "destination_ports": self._get_rule_destination_ports(rule), # le porte possono essere rappresentate in modi diversi (singola: 22, range: 20-25, tutte: *)
                     "matched_ports": matched_ports
                 })
 

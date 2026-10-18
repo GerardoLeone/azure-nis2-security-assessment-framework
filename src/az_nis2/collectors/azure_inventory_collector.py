@@ -65,6 +65,7 @@ class AzureInventoryCollector:
 
         return inventory
 
+    # Richiama i metodi per recuperare le configurazioni necessarie ai controlli di sicurezza implementati
     def _enrich_resource(self, resource: dict) -> None:
         resource_type = resource["type"].lower()
 

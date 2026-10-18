@@ -25,18 +25,23 @@ def main() -> None:
     if not resource_group:
         raise RuntimeError("AZURE_TARGET_RESOURCE_GROUP mancante nel file .env")
 
-    # Inventory
+    # Discovery delle risorse
     collector = AzureInventoryCollector(subscription_id)
     inventory = collector.collect_resource_group_inventory(resource_group)
 
-    # Configuration Security Check (vulnerabilities)
+    # Configuration Analyzer : questa configurazione Azure viola una regola di sicurezza?
     analyzer = ConfigurationAnalyzer("rules/azure_security_rules.yml")
     findings = analyzer.analyze(inventory)
 
-    # Compliance Evaluation with NIS2 (vulnerability impact which NIS2 requirement?)
+    # NIS2 Compliance Mapper : questa violazione tecnica è collegata a quale controllo NIS2?
     compliance_evaluator = NIS2ComplianceEvaluator("benchmarks/nis2_controls.yml")
     compliance = compliance_evaluator.evaluate(findings)
 
+    """ Risk Scorer : calcola il rischio a partire da
+    Inventario per sapere quali risorse esistono
+    Findings per sapere quali problemi hanno
+    Compliance per sapere quanti controlli NIS2 sono falliti
+    """
     risk_scorer = RiskScorer()
     risk = risk_scorer.score(inventory, findings, compliance)
 

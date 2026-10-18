@@ -21,20 +21,21 @@ class NIS2ComplianceEvaluator:
         version = self.mapping.get("version", "")
         controls_cfg = self.mapping.get("controls", [])
 
-        # Group by rule id (ex. "AZ-NSG-001" : [ finding1, finding2, ... ], ...)
+        # raggruppa i finding per rule id (ex. "AZ-NSG-001" : [ finding1, finding2, ... ], ...)
         findings_by_rule = self._group_findings_by_rule(findings)
 
         controls = []
 
         for control in controls_cfg:
-            # for each control get rules
+            # per ogni controllo, legge le regole associate
             rule_ids = control.get("rules", [])
             matched_findings = []
 
+            # recupera i finding corrispondenti ("finding > ruled_id: AZ-NSG-001" match con "NIS2 > rules: AZ-NSG-001")
             for rule_id in rule_ids:
                 matched_findings.extend(findings_by_rule.get(rule_id, []))
 
-            # extract affected resources infos
+            # estrare le risorse coinvolte
             affected_resources = self._extract_affected_resources(matched_findings)
 
             controls.append({
@@ -42,7 +43,7 @@ class NIS2ComplianceEvaluator:
                 "framework": control.get("framework", framework),
                 "title": control.get("title", ""),
                 "description": control.get("description", ""),
-                "status": "FAIL" if affected_resources else "PASS",
+                "status": "FAIL" if affected_resources else "PASS", # il controllo è FAIL se esiste almeno un Security Finding associato.
                 "mapped_rules": rule_ids,
                 "violated_rules": sorted({
                     finding["rule_id"]
@@ -53,6 +54,7 @@ class NIS2ComplianceEvaluator:
                 "remediation": control.get("remediation", "")
             })
 
+        # costruisce il riepilogo
         summary = self._build_summary(controls)
 
         return {
@@ -105,8 +107,8 @@ class NIS2ComplianceEvaluator:
         compliance_percentage = round((passed / total) * 100, 2) if total else 0.0
 
         return {
-            "total_controls": total,
-            "passed_controls": passed,
-            "failed_controls": failed,
-            "compliance_percentage": compliance_percentage
+            "total_controls": total, # 5
+            "passed_controls": passed, # 0
+            "failed_controls": failed, # 5
+            "compliance_percentage": compliance_percentage # 0.0
         }
