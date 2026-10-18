@@ -6,6 +6,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+conda activate az_nis2
+
 $ProjectRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 Set-Location $ProjectRoot
 
@@ -16,7 +18,7 @@ function Invoke-Script {
         throw "Script non trovato: $Path"
     }
 
-    powershell -ExecutionPolicy Bypass -File $Path
+    & $Path
 
     if ($LASTEXITCODE -ne 0) {
         throw "Script fallito: $Path"

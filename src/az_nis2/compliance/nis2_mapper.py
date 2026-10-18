@@ -21,17 +21,20 @@ class NIS2ComplianceEvaluator:
         version = self.mapping.get("version", "")
         controls_cfg = self.mapping.get("controls", [])
 
+        # Group by rule id (ex. "AZ-NSG-001" : [ finding1, finding2, ... ], ...)
         findings_by_rule = self._group_findings_by_rule(findings)
 
         controls = []
 
         for control in controls_cfg:
+            # for each control get rules
             rule_ids = control.get("rules", [])
             matched_findings = []
 
             for rule_id in rule_ids:
                 matched_findings.extend(findings_by_rule.get(rule_id, []))
 
+            # extract affected resources infos
             affected_resources = self._extract_affected_resources(matched_findings)
 
             controls.append({

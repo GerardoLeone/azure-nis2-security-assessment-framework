@@ -1,5 +1,7 @@
 $ErrorActionPreference = "Stop"
 
+conda activate az_nis2
+
 $ProjectRoot = Resolve-Path (Join-Path $PSScriptRoot "..")
 Set-Location $ProjectRoot
 

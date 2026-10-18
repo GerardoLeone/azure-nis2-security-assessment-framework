@@ -20,6 +20,7 @@ class RiskScorer:
         findings: list[dict[str, Any]],
         compliance: dict[str, Any],
     ) -> dict[str, Any]:
+        # indexing by id
         resources_by_id = {
             resource.get("id"): resource
             for resource in inventory
@@ -40,11 +41,13 @@ class RiskScorer:
             resource_id = resource.get("id")
             configuration = resource.get("configuration")
 
+            # if we get configuration, we assessed that resource
             if resource_id and configuration:
                 assessed_resource_ids.add(resource_id)
 
         assessed_resource_ids.update(findings_by_resource.keys())
 
+        # list of assessed resources (5)
         assessed_resources = [
             resources_by_id[resource_id]
             for resource_id in assessed_resource_ids
@@ -56,9 +59,11 @@ class RiskScorer:
         for finding in findings:
             severity = str(finding.get("severity", "low")).lower()
             severity_counter[severity] += 1
+        # "critical": 4, "high": 7, ...
 
         resource_scores = []
 
+        # Calculate risk for each resource
         for resource in assessed_resources:
             resource_id = resource["id"]
             resource_findings = findings_by_resource.get(resource_id, [])
@@ -104,6 +109,7 @@ class RiskScorer:
             reverse=True,
         )
 
+        # calculate risk score
         base_score = self._calculate_environment_base_score(resource_scores)
 
         compliance_summary = compliance.get("summary", {})
@@ -112,9 +118,17 @@ class RiskScorer:
 
         compliance_failure_ratio = 0
 
+        # add NIS2 ratio, failed / total
         if total_controls:
             compliance_failure_ratio = failed_controls / total_controls
 
+
+        # 1: nessun controllo NIS2 fallito = 0/5=0 ratio = 1+0.5*0 = 1 * base_score = punteggio finale non cambia
+        # 2: metà dei controlli falliti = 2.5/5=0.5 ratio = 1+0.5*0.5=1+0.25 = 1.25 * base_score = rischio aumenta del 25%
+        # 3: tutti i controlli falliti = 5/5=1 ratio = 1+0.5*1=1.5 * base_score = 1.5 * 63% = 94.5% (caso di studio)
+        # base_score = quanto sono gravi le misconfigurazioni Azure trovate
+        # compliance = quanto l'abiemtne fallisce i controlli NIS2
+        # il fallimento NIS2 non pesa più del rischio tecnico, ma aumenta il rischio tecnico fino a un massimo del 50% (scelta progettuale personale)
         final_score = min(
             100,
             base_score * (1 + 0.5 * compliance_failure_ratio),
@@ -191,11 +205,13 @@ class RiskScorer:
         if not resource_scores:
             return 0
 
+        # sum all raw scores
         total_raw_score = sum(
             resource.get("raw_score", 0)
             for resource in resource_scores
         )
 
+        # calculate max score
         max_environment_score = (
             len(resource_scores)
             * self.MAX_SEVERITY_WEIGHT
@@ -205,6 +221,7 @@ class RiskScorer:
         if max_environment_score == 0:
             return 0
 
+        # normalize
         return min(100, (total_raw_score / max_environment_score) * 100)
 
     def _infer_resource_sensitivity(self, resource: dict[str, Any]) -> float:
