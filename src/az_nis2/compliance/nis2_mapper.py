@@ -31,7 +31,7 @@ class NIS2ComplianceEvaluator:
             rule_ids = control.get("rules", [])
             matched_findings = []
 
-            # recupera i finding corrispondenti ("finding > ruled_id: AZ-NSG-001" match con "NIS2 > rules: AZ-NSG-001")
+            # recupera i finding corrispondenti ("finding > rule_id: AZ-NSG-001" match con "NIS2 > rules: AZ-NSG-001")
             for rule_id in rule_ids:
                 matched_findings.extend(findings_by_rule.get(rule_id, []))
 
